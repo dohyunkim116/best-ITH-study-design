@@ -1,0 +1,242 @@
+---
+title: "Best ITH association study design"
+author: "Do Hyun Kim"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+      toc: true
+      toc_float:
+          collapsed: false
+          smooth_scroll: true
+      number_sections: false
+      theme: lumen
+      highlight: tango
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = T, message = F)
+```
+
+```{r}
+sessionInfo()
+```
+
+
+```{r}
+library(tidyverse)
+library(latex2exp)
+source("functions.R")
+```
+
+## Best ITH association study design
+
+This document reproduces some parts of numerical studies we performed for the best ITH association study design paper. Here is the outline: 
+
+1. Generate multiregion genomic datasets.
+2. Estimate parameters using generated datasets
+3. Given estimated parameters, find the optimal design for 
+    - pre-collection scenario
+    - post-collection scenario
+    
+### Generate multiregion genomic datasets
+
+We generate multiregion genomic datasets to estimate three parameters, $\tau^2, \sigma^2$ and $\rho$ which will be used in objective functions later. The function `simulate_tumors()` which is in `functions.R` generates a list of matrix where each of the matrix represent a multiregion genomic dataset of a tumor. Important inputs the function require are:
+
+- number of tumors (`nTumors`)
+- number of samples for each tumor (`nSamp`)
+- number of genes or probes or copy number variations or others (`nSeg`)
+- underlying mutation rate of a patient (`mutationRates`) which will be used to generate underlying mutation status vector
+- lower bound of the uniform distribution from which $\theta$ will be drawn
+- upper bound of the uniform distribution from which ITH controlling parameter, $\theta$, will be drawn
+
+$\theta$ controls ITH with $\theta = 1$ rendering no ITH, and $\theta = 0.5$ rendering maximum ITH. The following code chunk generates multiregion genomic datasets of 50 tumors. The columns represent samples and each row represents a mutation status of a gene across the samples.
+```{r}
+nTumors <- 50
+nSamp <- 10
+nSeg <- 40
+theta_lb <- 0.5
+theta_ub <- 0.6
+mutationRates <- rbeta(nSeg,2,3)
+
+set.seed(1)
+tumor_mat_list <- simulate_tumors(nTumors=nTumors,nSamp=nSamp,nSeg=nSeg,
+                                  mutationRates=mutationRates,
+                                  theta_lb=theta_lb,theta_ub=theta_ub)
+tumor_mat_list[[1]]
+```
+
+### Estimate parameters
+
+We use the generated dataset above to illustrate how the parameters $\tau^2, \sigma^2$ and $\rho$ can be estimated. We define APITH, $\hat{D}_n$, and its conditional variance, $\textrm{Var}(\hat{D}_n|\mu_n)$ where $\mu_n$ is the true expected ITH of a subject $n$:
+
+\begin{align*}
+\hat{D}_n &= \frac{\sum_{1 \leq i < j \leq K_n} d^n_{ij}}{\binom{K_n}{2}}\\
+\textrm{Var}(\hat{D}_n|\mu_n) &= \frac{2}{K_n(K_n-1)}\sigma^2 + \frac{4(K_n - 2)}{K_n(K_n - 1)}\rho
+\end{align*}
+
+The function, `estimate_parameters()` which is defined in `functions.R` takes a list of multiregion genomic profile matrices, representing a single study, and estimates the parameters..
+```{r}
+estimate_parameters(tumor_mat_list)
+```
+
+### Find the optimal design
+
+The objective function we want to maximize is
+
+$$
+\varphi := \sum_{n=1}^N \frac{1}{\tau^2 + f(K_n;\sigma^2,\rho)}
+$$ 
+
+where $N$ is the total number of subjects, $K_n$ is the number of samples for subject $n$ and 
+
+$$
+f(K_n;\sigma^2,\rho) := \frac{2}{K_n(K_n - 1)}\sigma^2 + \frac{4(K_n - 2)}{K_n(K_n-1)}\rho.
+$$
+Given the budget to profile $M$ tumor samples at most, we want to find $(N,K_1,...,K_n)$ that maximize $\varphi$ under the constraints $K_n \geq 2$ and $\sum_{i=1}^N K_i \leq M.$
+
+#### Pre-collection scenario
+
+Pre-collection scenario assumes no samples have been collected. Thus, one has freedom to select any $N$ and $(K_1,...,K_N)$ to maximize $\varphi$. For a patient with $K$ tumor samples, we quantify the contribution of each tumor sample to $\varphi$ as
+
+$$
+\xi(K) = \frac{1}{K}\frac{1}{\tau^2 + f(K;\sigma^2,\rho)}.
+$$
+
+Assume $K_{max}$ is the integer that maximizes $\xi(K)$ so that $\varphi_{max} = M\cdot\xi(K_{max})$. To find $K_{max}$, we examine $\varphi$ at some range of values of $K$.\par
+
+In the following example, we work with different sets of estimated parameters $\tau^2, \sigma^2$ and $\rho$ which were computed using tumor datasets comprised of 200 tumors, each of them with 30 samples. We compute the optimal number of samples $K_{max}$ as well as $\varphi_{max} = M\cdot\xi(K_{max})$.\par
+
+Import parameter data
+```{r}
+estimated_parameters_tab <- openxlsx::read.xlsx("estimated_parameters.xlsx")
+estimated_parameters_tab
+```
+
+We set $M = 100$ and search $K_{max} \in \{2,3,...,10\}$. `phi1()` computes $\varphi$ given the parameters, a total budget $N$ and number of samples $K$ as inputs.
+```{r}
+M <- 100
+nSamp_max <- 10
+res <- apply(estimated_parameters_tab,1,function(x){
+    tau_sq <- x[5]
+    sigma_sq <- x[6]
+    rho <- x[7]
+    phi <- lapply(2:nSamp_max,function(nSamp) phi1(sigma_sq,rho,tau_sq,nSamp,M)) %>% unlist()
+    K_max <- which.max(phi) + 1
+    phi_max <- phi[which.max(phi)]
+    c(K_max, phi_max)
+}) %>% t()
+colnames(res) <- c("K_max","phi_max")
+res <- as_tibble(cbind(estimated_parameters_tab,res))
+res
+```
+We plot $\varphi$ as a function of $K$ for selected parameters:
+
+- $(\hat{\tau}^2,\hat{\sigma}^2,\hat{\rho}) = (2.04,5.24,1.68)$
+- $(\hat{\tau}^2,\hat{\sigma}^2,\hat{\rho}) = (1.42,6.19,1.41)$
+- $(\hat{\tau}^2,\hat{\sigma}^2,\hat{\rho}) = (2.01,6.80,0.15)$
+
+```{r}
+res_selected <- res[c(10,5,1),]
+par(mfrow=c(1,3))
+par(oma = c(3,3,0,0))
+par(mar = c(2,2,2,1))
+apply(res_selected,1,function(x){
+    tau_sq <- x[5]
+    sigma_sq <- x[6]
+    rho <- x[7]
+    K <- 2:10
+    phi <- lapply(2:nSamp_max,function(nSamp) phi1(sigma_sq,rho,tau_sq,nSamp,M)) %>% unlist()
+    fit <- lm(phi~poly(K,6,raw=F))
+    main_str <- TeX(sprintf("$(\\tau^2,\\sigma^2,\\rho) = (%0.2f,%0.2f,%0.2f)$",tau_sq,sigma_sq,rho))
+    plot(K,phi,ylab="", xlab="",main = main_str,col=ifelse(phi==max(phi),"red","black"),
+         pch=20,ylim = c(3,8))
+    lines(K, predict(fit,data.frame(x=K)), col="blue", lwd = 0.5)
+})
+mtext(TeX("$K$"), side = 1, outer = T, line = 1)
+mtext(TeX("$\\varphi$"), side = 2, outer = T, line = 0.75,las=1)
+```
+
+#### Post-collection scenario
+
+For the post-collection scenario, we assume tumor samples have been collected for $L$ patients, each of which has $m_l$ tumor samples ($l = 1,...,L$). We represent this sample collection scheme in the following way:
+
+|number of tumor samples collected|number of patients|
+|:---:|:---:|
+|2|$n_2$|
+|3|$n_3$|
+|4|$n_4$|
+|$\cdots$|$\cdots$|
+|$A$|$n_A$|
+
+$n_a$ is the number of patients with $a (2 \leq a \leq A)$ tumor samples available. We let $\omega_a \geq 0$ be the number of patients who contribute $a$ tumor samples to the study. We want to find $(\omega_2,...,\omega_A$) meeting appropriate constraints and that achieves
+$$
+\varphi_{max} := \max_{\omega_2,...,\omega_A} \sum_{a=2}^A \frac{\omega_a}{\tau^2 + f(a,\sigma^2,\rho)}
+$$
+where $f(a,\sigma^2,\rho)$ is the same as what we have defined in the pre-collection scenario. The details of constraints can be found in the paper.\par
+
+For illustration, we explore the optimal design for a study with the following estimated parameters:
+
+- $(\hat{\tau}^2,\hat{\sigma}^2,\hat{\rho}) = (2.04,5.24,1.68)$
+
+We assume we have already collected 372 tumor samples from 84 patients as the following:
+
+|number of tumor samples collected|number of patients|
+|:---:|:---:|
+|2|20|
+|3|16|
+|4|14|
+|5|10|
+|6|8|
+|7|6|
+|8|4|
+|9|4|
+|10|2|
+
+The function `recursive_search` that computes the optimal design takes the following as inputs:
+
+- `A`: the largest number of tumor samples collected among all subjects
+- `M`: a total number of tumor samples budgeted 
+- `R`: a number of available subjects with more than `A` samples
+- `Om`: a vector of "candidate" number of subjects ($(\omega_1,\omega_2,...,\omega_A)$)
+- `N`: a vector of number of subjects collected for each number of samples ($(n_1,n_2,...,n_A)$)
+- `tau_sq`: $\tau^2$
+- `sigma_sq`: $\sigma^2$
+- `rho`: $\rho$
+
+We obtain optimal design solution for $M = 200.$
+```{r,eval=F}
+params <- c(2.04,5.24,1.68)
+A <- 10
+N <- c(0,20,16,14,10,8,6,4,4,2)
+Om <- rep(0,10)
+R <- 0
+M <- 200
+
+res <- recursive_search(A = A,M = M,R = R, Om = Om, N = N,
+                        tau_sq = params[1], sigma_sq = params[2],rho = params[3])
+```
+
+```{r,include=F,eval=F}
+saveRDS(res,"post_collection_example_res_M200.RDS")
+```
+
+```{r,include=F}
+res <- readRDS("post_collection_example_res_M200.RDS")
+```
+
+The output of the function is a list of two things:
+
+- The optimal design solution $(\omega_1,\omega_2,...,\omega_A)$ that achieves $\varphi_{max}$
+- $\varphi_{max}$
+
+```{r}
+res
+```
+
+
+
+
+
+
+
+
