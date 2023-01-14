@@ -80,44 +80,44 @@ tumor_mat_list[[1]]
 
     ##       s1 s2 s3 s4 s5 s6 s7 s8 s9 s10
     ##  [1,]  0  0  0  0  0  0  0  0  0   0
-    ##  [2,]  0  0  0  0  0  0  0  0  0   0
+    ##  [2,]  0  1  0  0  1  1  0  0  1   0
     ##  [3,]  0  0  0  0  0  0  0  0  0   0
-    ##  [4,]  0  1  0  0  1  1  0  0  1   0
+    ##  [4,]  0  1  0  1  0  1  0  1  1   0
     ##  [5,]  0  0  0  0  0  0  0  0  0   0
-    ##  [6,]  0  1  0  1  0  1  0  1  1   0
-    ##  [7,]  1  1  0  1  1  0  1  1  1   0
-    ##  [8,]  1  1  1  0  0  1  0  1  1   1
-    ##  [9,]  1  1  1  0  1  0  1  1  1   1
+    ##  [6,]  1  1  0  1  1  0  1  1  1   0
+    ##  [7,]  1  1  1  0  0  1  0  1  1   1
+    ##  [8,]  1  1  1  0  1  0  1  1  1   1
+    ##  [9,]  1  1  1  0  0  1  1  0  1   1
     ## [10,]  0  0  0  0  0  0  0  0  0   0
     ## [11,]  0  0  0  0  0  0  0  0  0   0
     ## [12,]  0  0  0  0  0  0  0  0  0   0
-    ## [13,]  0  0  0  0  0  0  0  0  0   0
-    ## [14,]  1  1  1  0  0  1  1  0  1   1
-    ## [15,]  0  0  1  1  0  0  1  1  0   1
+    ## [13,]  0  0  1  1  0  0  1  1  0   1
+    ## [14,]  0  0  0  0  0  0  0  0  0   0
+    ## [15,]  0  0  1  0  1  1  0  0  0   1
     ## [16,]  0  0  0  0  0  0  0  0  0   0
-    ## [17,]  0  0  1  0  1  1  0  0  0   1
-    ## [18,]  0  1  0  1  0  0  0  1  1   1
+    ## [17,]  0  1  0  1  0  0  0  1  1   1
+    ## [18,]  1  0  0  0  1  0  1  0  1   1
     ## [19,]  0  0  0  0  0  0  0  0  0   0
-    ## [20,]  1  0  0  0  1  0  1  0  1   1
-    ## [21,]  0  1  0  0  0  1  1  1  1   0
+    ## [20,]  0  1  0  0  0  1  1  1  1   0
+    ## [21,]  1  1  1  0  1  1  1  0  1   0
     ## [22,]  0  0  0  0  0  0  0  0  0   0
-    ## [23,]  1  1  1  0  1  1  1  0  1   0
+    ## [23,]  0  0  1  1  0  0  1  1  1   1
     ## [24,]  0  0  0  0  0  0  0  0  0   0
-    ## [25,]  0  0  0  0  0  0  0  0  0   0
+    ## [25,]  1  1  1  0  0  1  1  0  1   0
     ## [26,]  0  0  0  0  0  0  0  0  0   0
     ## [27,]  0  0  0  0  0  0  0  0  0   0
-    ## [28,]  0  0  1  1  0  0  1  1  1   1
-    ## [29,]  1  1  1  0  0  1  1  0  1   0
+    ## [28,]  0  0  0  0  0  0  0  0  0   0
+    ## [29,]  0  1  1  1  1  0  0  1  1   0
     ## [30,]  0  0  0  0  0  0  0  0  0   0
     ## [31,]  0  0  0  0  0  0  0  0  0   0
     ## [32,]  0  0  0  0  0  0  0  0  0   0
-    ## [33,]  0  1  1  1  1  0  0  1  1   0
+    ## [33,]  1  1  0  1  1  1  0  0  1   0
     ## [34,]  0  0  0  0  0  0  0  0  0   0
-    ## [35,]  1  1  0  1  1  1  0  0  1   0
-    ## [36,]  0  0  0  0  0  0  0  0  0   0
-    ## [37,]  1  1  0  1  0  1  1  0  1   0
+    ## [35,]  1  1  0  1  0  1  1  0  1   0
+    ## [36,]  1  1  1  0  1  0  1  0  0   1
+    ## [37,]  1  0  0  0  0  1  1  0  0   1
     ## [38,]  0  0  0  0  0  0  0  0  0   0
-    ## [39,]  1  1  1  0  1  0  1  0  0   1
+    ## [39,]  0  0  0  0  0  0  0  0  0   0
     ## [40,]  0  0  0  0  0  0  0  0  0   0
 
 ### Estimate parameters
@@ -128,6 +128,13 @@ $\hat{D}_n$, and its conditional variance,
 $\textrm{Var}(\hat{D}_n|\mu_n)$ where $\mu_n$ is the true expected ITH
 of a subject $n$:
 
+$$
+\begin{align*}
+    \hat{D}_n &= \frac{\sum_{1 \leq i < j \leq K_n} d^n_{ij}}{\binom{K_n}{2}}\\
+    \textrm{Var}(\hat{D}_n|\mu_n) &= \frac{2}{K_n(K_n-1)}\sigma^2 + \frac{4(K_n - 2)}{K_n(K_n - 1)}\rho
+\end{align*}
+$$
+
 The function, `estimate_parameters()` which is defined in `functions.R`
 takes a list of multiregion genomic profile matrices, representing a
 single study, and estimates the parameters..
@@ -137,7 +144,7 @@ estimate_parameters(tumor_mat_list)
 ```
 
     ## sigma_square          rho   tau_square 
-    ##    4.1155556    0.1244444    2.0723978
+    ##    4.1848889    0.1182222    1.9659881
 
 ### Find the optimal design
 
@@ -152,8 +159,10 @@ samples for subject $n$ and
 
 $$
 f(K_n;\sigma^2,\rho) := \frac{2}{K_n(K_n - 1)}\sigma^2 + \frac{4(K_n - 2)}{K_n(K_n-1)}\rho.
-$$ Given the budget to profile $M$ tumor samples at most, we want to
-find $(N,K_1,...,K_n)$ that maximize $\varphi$ under the constraints
+$$
+
+Given the budget to profile $M$ tumor samples at most, we want to find
+$(N,K_1,...,K_n)$ that maximize $\varphi$ under the constraints
 $K_n \geq 2$ and $\sum_{i=1}^N K_i \leq M.$
 
 #### Pre-collection scenario
@@ -170,11 +179,13 @@ $$
 Assume $K_{max}$ is the integer that maximizes $\xi(K)$ so that
 $\varphi_{max} = M\cdot\xi(K_{max})$. To find $K_{max}$, we examine
 $\varphi$ at some range of values of $K$.
+
 In the following example, we work with different sets of estimated
 parameters $\tau^2, \sigma^2$ and $\rho$ which were computed using tumor
 datasets comprised of 200 tumors, each of them with 30 samples. We
 compute the optimal number of samples $K_{max}$ as well as
 $\varphi_{max} = M\cdot\xi(K_{max})$.
+
 Import parameter data
 
 ``` r
@@ -293,6 +304,7 @@ achieves $$
 $$ where $f(a,\sigma^2,\rho)$ is the same as what we have defined in the
 pre-collection scenario. The details of constraints can be found in the
 paper.
+
 For illustration, we explore the optimal design for a study with the
 following estimated parameters:
 
