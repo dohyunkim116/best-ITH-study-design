@@ -138,7 +138,7 @@ estimate_parameters <- function(tumor_mat_list){
     attr(weight,"par")
 }
 
-phi1 <- function(sigma_sq,rho,tau_sq,nSamp,allowed_total_nSamp){
+phi1 <- function(tau_sq, sigma_sq, rho, nSamp, allowed_total_nSamp){
     between_var <- tau_sq
     avg_within_var <- sigma_sq
     avg_within_covar <- rho
@@ -149,7 +149,20 @@ phi1 <- function(sigma_sq,rho,tau_sq,nSamp,allowed_total_nSamp){
     res
 }
 
-
+power1 <- function(sigma_sq,rho,tau_sq,beta,sigma_y,nSamp,allowed_total_nSamp){
+    between_var <- tau_sq
+    avg_within_var <- sigma_sq
+    avg_within_covar <- rho
+    var_est_ith <- 2*avg_within_var/(nSamp^2-nSamp) + (4*nSamp-8)*avg_within_covar/(nSamp^2-nSamp)
+    nSubjects <- allowed_total_nSamp/nSamp
+    phi1 <- nSubjects/(between_var + var_est_ith)
+    xi <- beta/sigma_y*tau_sq*sqrt(phi1)
+    res <- 2 - pnorm(1.96 - xi) - pnorm(1.96 + xi)
+    attr(res,"sigma_n_sq") <- var_est_ith
+    attr(res,"phi1") <- phi1
+    attr(res,"xi") <- xi
+    res
+}
 
 
 
