@@ -142,7 +142,7 @@ res
 
 Next, we plot $\varphi$ as a function of $K$ for selected parameters.
 
-```{r, results="hide", fig.show='asis'}
+```{r, results="hide", fig.show='asis', dpi=300}
 par(mfrow=c(1,3))
 par(oma = c(3,3,0,0))
 par(mar = c(2,2,2,1))
