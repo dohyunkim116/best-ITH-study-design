@@ -101,7 +101,7 @@ $$
 \xi(K) = \frac{1}{K}\frac{1}{\tau^2 + f(K;\sigma^2,\rho)}.
 $$
 
-Assume $K_{max}$ is the integer that maximizes $\xi(K)$. Then, the optimal design is to choose $N=M/K_{max}$ patients and $K_n=K_max$ for each $n = 1,...,N$. The optimal value is given by
+Assume $K_{max}$ is the integer that maximizes $\xi(K)$. Then, the optimal design is to choose $N=M/K_{max}$ patients and $K_n=K_{max}$ for each $n = 1,...,N$. The optimal value is given by
 
 $$
 \varphi(K_{max}) = M\xi(K_{max}) = \frac{M}{K_{max}}\left(\frac{1}{\tau^2 + f(K;\sigma^2,\rho)}\right).
@@ -109,7 +109,7 @@ $$
 
 In the following example, we set $M = 100$ and search $K_{max}$ that maximizes $\varphi$ for the following parameters (which will result in different $K_{max}$):
 
--   $(\hat{\tau}^2,\hat{\sigma}^2,\hat{\rho}) = (4.718, 5.831, 1.463)$ 
+-   $(\hat{\tau}^2,\hat{\sigma}^2,\hat{\rho}) = (4.718, 5.831, 1.463)$
 -   $(\hat{\tau}^2,\hat{\sigma}^2,\hat{\rho}) = (3.123, 6.527, 0.877)$
 -   $(\hat{\tau}^2,\hat{\sigma}^2,\hat{\rho}) = (2.009, 6.800, 0.147)$
 
@@ -142,7 +142,7 @@ res
 
 Next, we plot $\varphi$ as a function of $K$ for selected parameters.
 
-```{r, results="hide", fig.ext='tex'}
+```{r, results="hide", fig.show='asis'}
 par(mfrow=c(1,3))
 par(oma = c(3,3,0,0))
 par(mar = c(2,2,2,1))
