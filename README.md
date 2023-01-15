@@ -1,52 +1,31 @@
 ``` r
-sessionInfo()
-```
-
-    ## R version 4.0.2 (2020-06-22)
-    ## Platform: x86_64-apple-darwin17.0 (64-bit)
-    ## Running under: macOS  10.16
-    ## 
-    ## Matrix products: default
-    ## BLAS:   /Library/Frameworks/R.framework/Versions/4.0/Resources/lib/libRblas.dylib
-    ## LAPACK: /Library/Frameworks/R.framework/Versions/4.0/Resources/lib/libRlapack.dylib
-    ## 
-    ## locale:
-    ## [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
-    ## 
-    ## attached base packages:
-    ## [1] stats     graphics  grDevices utils     datasets  methods   base     
-    ## 
-    ## loaded via a namespace (and not attached):
-    ##  [1] compiler_4.0.2  magrittr_2.0.2  fastmap_1.1.0   cli_3.1.1      
-    ##  [5] tools_4.0.2     htmltools_0.5.2 rstudioapi_0.13 yaml_2.2.2     
-    ##  [9] stringi_1.7.6   rmarkdown_2.10  knitr_1.37      stringr_1.4.0  
-    ## [13] xfun_0.29       digest_0.6.29   rlang_1.0.1     evaluate_0.14
-
-``` r
 library(tidyverse)
 library(latex2exp)
 source("functions.R")
 ```
 
-## Best ITH association study design
+## Best intratumor heterogeneity association study design
 
-This document reproduces some parts of numerical studies we performed
-for the best ITH association study design paper. Here is the outline:
+This document partly reproduces numerical studies presented in the best
+ITH (intratumor heterogeneity) association study [paper]().
+Specifically, we will
 
-1.  Generate multiregion genomic datasets.
-2.  Estimate parameters using generated datasets
-3.  Given estimated parameters, find the optimal design for
-    - pre-collection scenario
-    - post-collection scenario
+1.  simulate (binary) multiregion genomic data,
+2.  estimate parameters that will be used to find optimal designs, and
+3.  find optimal designs for pre-collection and post-collection scenario
+    for given estimated parameters.
+
+All of the functions appearing in this document is in
+$\texttt{functions.R}$.
 
 ### Generate multiregion genomic datasets
 
-We generate multiregion genomic datasets to estimate three parameters,
-$\tau^2, \sigma^2$ and $\rho$ which will be used in objective functions
-later. The function `simulate_tumors()` which is in `functions.R`
-generates a list of matrix where each of the matrix represent a
-multiregion genomic dataset of a tumor. Important inputs the function
-require are:
+We simulate multiregion genomic data to estimate three parameters,
+$\tau^2, \sigma^2$ and $\rho$. These parameters will be used to find
+optimal designs in the later section. The function `simulate_tumors()`
+generates a list of matrix, each of them representing a multiregion
+genomic data for one tumor (corresponding to one subject). Required
+inputs are
 
 - number of tumors (`nTumors`)
 - number of samples for each tumor (`nSamp`)
@@ -58,10 +37,10 @@ require are:
 - upper bound of the uniform distribution from which ITH controlling
   parameter, $\theta$, will be drawn
 
-$\theta$ controls ITH with $\theta = 1$ rendering no ITH, and
-$\theta = 0.5$ rendering maximum ITH. The following code chunk generates
-multiregion genomic datasets of 50 tumors. The columns represent samples
-and each row represents a mutation status of a gene across the samples.
+$\theta$ controls ITH where $\theta = 1$ corresponds to no ITH, and
+$\theta = 0.5$ corresponds to maximum possible ITH. The following code
+chunk generates multiregion genomic data of 50 tumors. The columns
+represent samples and rows represent gene’s mutation status.
 
 ``` r
 nTumors <- 50
@@ -80,71 +59,72 @@ tumor_mat_list[[1]]
 
     ##       s1 s2 s3 s4 s5 s6 s7 s8 s9 s10
     ##  [1,]  0  0  0  0  0  0  0  0  0   0
-    ##  [2,]  0  1  0  0  1  1  0  0  1   0
-    ##  [3,]  0  0  0  0  0  0  0  0  0   0
+    ##  [2,]  0  0  0  0  0  0  0  0  0   0
+    ##  [3,]  0  1  0  0  1  1  0  0  1   0
     ##  [4,]  0  1  0  1  0  1  0  1  1   0
     ##  [5,]  0  0  0  0  0  0  0  0  0   0
     ##  [6,]  1  1  0  1  1  0  1  1  1   0
     ##  [7,]  1  1  1  0  0  1  0  1  1   1
     ##  [8,]  1  1  1  0  1  0  1  1  1   1
-    ##  [9,]  1  1  1  0  0  1  1  0  1   1
+    ##  [9,]  0  0  0  0  0  0  0  0  0   0
     ## [10,]  0  0  0  0  0  0  0  0  0   0
     ## [11,]  0  0  0  0  0  0  0  0  0   0
     ## [12,]  0  0  0  0  0  0  0  0  0   0
-    ## [13,]  0  0  1  1  0  0  1  1  0   1
+    ## [13,]  1  1  1  0  0  1  1  0  1   1
     ## [14,]  0  0  0  0  0  0  0  0  0   0
-    ## [15,]  0  0  1  0  1  1  0  0  0   1
+    ## [15,]  0  0  1  1  0  0  1  1  0   1
     ## [16,]  0  0  0  0  0  0  0  0  0   0
-    ## [17,]  0  1  0  1  0  0  0  1  1   1
-    ## [18,]  1  0  0  0  1  0  1  0  1   1
-    ## [19,]  0  0  0  0  0  0  0  0  0   0
-    ## [20,]  0  1  0  0  0  1  1  1  1   0
-    ## [21,]  1  1  1  0  1  1  1  0  1   0
+    ## [17,]  0  0  1  0  1  1  0  0  0   1
+    ## [18,]  0  1  0  1  0  0  0  1  1   1
+    ## [19,]  1  0  0  0  1  0  1  0  1   1
+    ## [20,]  0  0  0  0  0  0  0  0  0   0
+    ## [21,]  0  1  0  0  0  1  1  1  1   0
     ## [22,]  0  0  0  0  0  0  0  0  0   0
-    ## [23,]  0  0  1  1  0  0  1  1  1   1
+    ## [23,]  0  0  0  0  0  0  0  0  0   0
     ## [24,]  0  0  0  0  0  0  0  0  0   0
-    ## [25,]  1  1  1  0  0  1  1  0  1   0
-    ## [26,]  0  0  0  0  0  0  0  0  0   0
+    ## [25,]  0  0  0  0  0  0  0  0  0   0
+    ## [26,]  1  1  1  0  1  1  1  0  1   0
     ## [27,]  0  0  0  0  0  0  0  0  0   0
     ## [28,]  0  0  0  0  0  0  0  0  0   0
-    ## [29,]  0  1  1  1  1  0  0  1  1   0
+    ## [29,]  0  0  1  1  0  0  1  1  1   1
     ## [30,]  0  0  0  0  0  0  0  0  0   0
-    ## [31,]  0  0  0  0  0  0  0  0  0   0
-    ## [32,]  0  0  0  0  0  0  0  0  0   0
+    ## [31,]  1  1  1  0  0  1  1  0  1   0
+    ## [32,]  0  1  1  1  1  0  0  1  1   0
     ## [33,]  1  1  0  1  1  1  0  0  1   0
     ## [34,]  0  0  0  0  0  0  0  0  0   0
     ## [35,]  1  1  0  1  0  1  1  0  1   0
     ## [36,]  1  1  1  0  1  0  1  0  0   1
     ## [37,]  1  0  0  0  0  1  1  0  0   1
     ## [38,]  0  0  0  0  0  0  0  0  0   0
-    ## [39,]  0  0  0  0  0  0  0  0  0   0
+    ## [39,]  1  0  0  0  0  0  0  0  1   1
     ## [40,]  0  0  0  0  0  0  0  0  0   0
 
 ### Estimate parameters
 
-We use the generated dataset above to illustrate how the parameters
-$\tau^2, \sigma^2$ and $\rho$ can be estimated. We define APITH,
-$\hat{D}_n$, and its conditional variance,
-$\textrm{Var}(\hat{D}_n|\mu_n)$ where $\mu_n$ is the true expected ITH
-of a subject $n$:
+We use simulated data `tumor_mat_list` to estimate parameters
+$\tau^2, \sigma^2$ and $\rho$. We define average pairwise ITH (APITH) as
 
 $$
-\begin{align*}
-    \hat{D}_n &= \frac{\sum_{1 \leq i < j \leq K_n} d^n_{ij}}{\binom{K_n}{2}}\\
-    \textrm{Var}(\hat{D}_n|\mu_n) &= \frac{2}{K_n(K_n-1)}\sigma^2 + \frac{4(K_n - 2)}{K_n(K_n - 1)}\rho
-\end{align*}
+    \hat{D}_n = \frac{\sum_{1 \leq i < j \leq K_n} d^n_{ij}}{\binom{K_n}{2}}
 $$
 
-The function, `estimate_parameters()` which is defined in `functions.R`
-takes a list of multiregion genomic profile matrices, representing a
-single study, and estimates the parameters..
+and its conditional variance as
+
+$$
+    \textrm{Var}(\hat{D}_n|\mu_n) = \frac{2}{K_n(K_n-1)}\sigma^2 + \frac{4(K_n - 2)}{K_n(K_n - 1)}\rho
+$$
+
+where $\mu_n$ is the true expected ITH of a subject $n$.
+
+The function `estimate_parameters()` takes a list of multiregion genomic
+profile matrices and estimates the parameters.
 
 ``` r
 estimate_parameters(tumor_mat_list)
 ```
 
     ## sigma_square          rho   tau_square 
-    ##    4.1848889    0.1182222    1.9659881
+    ##   4.52095238   0.07406349   1.69317181
 
 ### Find the optimal design
 
@@ -161,108 +141,85 @@ $$
 f(K_n;\sigma^2,\rho) := \frac{2}{K_n(K_n - 1)}\sigma^2 + \frac{4(K_n - 2)}{K_n(K_n-1)}\rho.
 $$
 
-Given the budget to profile $M$ tumor samples at most, we want to find
-$(N,K_1,...,K_n)$ that maximize $\varphi$ under the constraints
-$K_n \geq 2$ and $\sum_{i=1}^N K_i \leq M.$
+Given the budget to profile $M$ tumor samples, we want to find
+$(N,K_1,...,K_n)$ (optimal design) that maximize $\varphi$ under the
+constraints $K_n \geq 2$ and $\sum_{i=1}^N K_i \leq M.$
 
 #### Pre-collection scenario
 
 Pre-collection scenario assumes no samples have been collected. Thus,
 one has freedom to select any $N$ and $(K_1,...,K_N)$ to maximize
-$\varphi$. For a patient with $K$ tumor samples, we quantify the
+$\varphi$. For a subject with $K$ tumor samples, we quantify the
 contribution of each tumor sample to $\varphi$ as
 
 $$
 \xi(K) = \frac{1}{K}\frac{1}{\tau^2 + f(K;\sigma^2,\rho)}.
 $$
 
-Assume $K_{max}$ is the integer that maximizes $\xi(K)$ so that
-$\varphi_{max} = M\cdot\xi(K_{max})$. To find $K_{max}$, we examine
-$\varphi$ at some range of values of $K$.
+Assume $K_{max}$ is the integer that maximizes $\xi(K)$. Then, the
+optimal design is to choose $N=M/K_max$ patients and $K_n=K_max$ for
+each $n = 1,...,N$. The optimal value is given by $$
+\varphi(K_{max}) = M\xi(K_{max}) = \frac{M}{K_{max}}\left(\frac{1}{\tau^2 + f(K;\sigma^2,\rho)}\right).
+$$
 
-In the following example, we work with different sets of estimated
-parameters $\tau^2, \sigma^2$ and $\rho$ which were computed using tumor
-datasets comprised of 200 tumors, each of them with 30 samples. We
-compute the optimal number of samples $K_{max}$ as well as
-$\varphi_{max} = M\cdot\xi(K_{max})$.
+In the following example, we set $M = 100$ and search
+$K_{max} \in \{2,3,...,10\}$ that maximizes $\varphi$ for the following
+parameters producing different $K_{max}$:
 
-Import parameter data
+- $(\hat{\tau}^2,\hat{\sigma}^2,\hat{\rho}) = (4.718, 5.831, 1.463)$
+  (2nd row)
+- $(\hat{\tau}^2,\hat{\sigma}^2,\hat{\rho}) = (3.123, 6.527, 0.877)$
+  (8th row)
+- $(\hat{\tau}^2,\hat{\sigma}^2,\hat{\rho}) = (2.009, 6.800, 0.147)$
+  (10th row)
 
-``` r
-estimated_parameters_tab <- openxlsx::read.xlsx("estimated_parameters.xlsx")
-estimated_parameters_tab
-```
-
-    ##    a b    l    u tau_sq sigma_sq   rho
-    ## 1  5 2 0.55 0.60  2.009    6.800 0.147
-    ## 2  5 2 0.50 0.55  2.093    6.880 0.012
-    ## 3  5 2 0.60 0.65  1.939    6.754 0.393
-    ## 4  5 2 0.65 0.70  1.752    6.696 0.707
-    ## 5  5 2 0.75 0.80  1.419    6.186 1.409
-    ## 6  5 2 0.60 0.70  2.031    6.698 0.537
-    ## 7  5 2 0.50 0.70  2.355    6.749 0.301
-    ## 8  5 2 0.60 0.80  3.123    6.527 0.877
-    ## 9  5 2 0.50 0.80  3.788    6.609 0.600
-    ## 10 5 2 0.80 0.90  2.036    5.242 1.685
-    ## 11 5 2 0.70 0.90  4.718    5.831 1.463
-    ## 12 5 2 0.60 0.90  6.935    6.133 1.158
-    ## 13 5 2 0.50 0.90  7.933    6.244 0.864
-
-We set $M = 100$ and search $K_{max} \in \{2,3,...,10\}$. `phi1()`
-computes $\varphi$ given the parameters, a total budget $N$ and number
-of samples $K$ as inputs.
+The function `phi1()` takes $\sigma^2$, $\rho$ and $\tau^2$, number of
+samples $K$ and a total budget $M$ as inputs and outputs $\varphi$.
 
 ``` r
+# Create parameter table
+parameter_tab <- tibble(
+    tau_sq = c(4.718,3.123,2.009),
+    sigma_sq = c(5.831, 6.527, 6.800),
+    rho = c(1.463, 0.877, 0.147)
+)
+
+# Find K_max for each parameter setting
 M <- 100
 nSamp_max <- 10
-res <- apply(estimated_parameters_tab,1,function(x){
-    tau_sq <- x[5]
-    sigma_sq <- x[6]
-    rho <- x[7]
-    phi <- lapply(2:nSamp_max,function(nSamp) phi1(sigma_sq,rho,tau_sq,nSamp,M)) %>% unlist()
+res <- apply(parameter_tab,1,function(x){
+    tau_sq <- x[1]
+    sigma_sq <- x[2]
+    rho <- x[3]
+    phi <- lapply(2:nSamp_max,function(nSamp) phi1(tau_sq,sigma_sq,rho,nSamp,M)) %>% unlist()
     K_max <- which.max(phi) + 1
     phi_max <- phi[which.max(phi)]
     c(K_max, phi_max)
 }) %>% t()
 colnames(res) <- c("K_max","phi_max")
-res <- as_tibble(cbind(estimated_parameters_tab,res))
+res <- as_tibble(cbind(parameter_tab,res))
 res
 ```
 
-    ## # A tibble: 13 × 9
-    ##        a     b     l     u tau_sq sigma_sq   rho K_max phi_max
-    ##    <dbl> <dbl> <dbl> <dbl>  <dbl>    <dbl> <dbl> <dbl>   <dbl>
-    ##  1     5     2  0.55  0.6    2.01     6.8  0.147     4    7.72
-    ##  2     5     2  0.5   0.55   2.09     6.88 0.012     4    7.70
-    ##  3     5     2  0.6   0.65   1.94     6.75 0.393     4    7.52
-    ##  4     5     2  0.65  0.7    1.75     6.70 0.707     4    7.49
-    ##  5     5     2  0.75  0.8    1.42     6.19 1.41      3    7.54
-    ##  6     5     2  0.6   0.7    2.03     6.70 0.537     3    7.21
-    ##  7     5     2  0.5   0.7    2.36     6.75 0.301     3    6.94
-    ##  8     5     2  0.6   0.8    3.12     6.53 0.877     3    5.67
-    ##  9     5     2  0.5   0.8    3.79     6.61 0.6       3    5.22
-    ## 10     5     2  0.8   0.9    2.04     5.24 1.68      2    6.87
-    ## 11     5     2  0.7   0.9    4.72     5.83 1.46      2    4.74
-    ## 12     5     2  0.6   0.9    6.94     6.13 1.16      2    3.83
-    ## 13     5     2  0.5   0.9    7.93     6.24 0.864     2    3.53
+    ## # A tibble: 3 × 5
+    ##   tau_sq sigma_sq   rho K_max phi_max
+    ##    <dbl>    <dbl> <dbl> <dbl>   <dbl>
+    ## 1   4.72     5.83 1.46      2    4.74
+    ## 2   3.12     6.53 0.877     3    5.67
+    ## 3   2.01     6.8  0.147     4    7.72
 
-We plot $\varphi$ as a function of $K$ for selected parameters:
-
-- $(\hat{\tau}^2,\hat{\sigma}^2,\hat{\rho}) = (2.04,5.24,1.68)$
-- $(\hat{\tau}^2,\hat{\sigma}^2,\hat{\rho}) = (1.42,6.19,1.41)$
-- $(\hat{\tau}^2,\hat{\sigma}^2,\hat{\rho}) = (2.01,6.80,0.15)$
+Next, we plot $\varphi$ as a function of $K$ for selected parameters.
 
 ``` r
-res_selected <- res[c(10,5,1),]
 par(mfrow=c(1,3))
 par(oma = c(3,3,0,0))
 par(mar = c(2,2,2,1))
-apply(res_selected,1,function(x){
-    tau_sq <- x[5]
-    sigma_sq <- x[6]
-    rho <- x[7]
+apply(res,1,function(x){
+    tau_sq <- x[1]
+    sigma_sq <- x[2]
+    rho <- x[3]
     K <- 2:10
-    phi <- lapply(2:nSamp_max,function(nSamp) phi1(sigma_sq,rho,tau_sq,nSamp,M)) %>% unlist()
+    phi <- lapply(2:nSamp_max,function(nSamp) phi1(tau_sq,sigma_sq,rho,nSamp,M)) %>% unlist()
     fit <- lm(phi~poly(K,6,raw=F))
     main_str <- TeX(sprintf("$(\\tau^2,\\sigma^2,\\rho) = (%0.2f,%0.2f,%0.2f)$",tau_sq,sigma_sq,rho))
     plot(K,phi,ylab="", xlab="",main = main_str,col=ifelse(phi==max(phi),"red","black"),
@@ -278,7 +235,7 @@ mtext(TeX("$K$"), side = 1, outer = T, line = 1)
 mtext(TeX("$\\varphi$"), side = 2, outer = T, line = 0.75,las=1)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
 
 #### Post-collection scenario
 
@@ -292,21 +249,24 @@ following way:
 |                 2                 |       $n_2$        |
 |                 3                 |       $n_3$        |
 |                 4                 |       $n_4$        |
-|             $\cdots$              |      $\cdots$      |
+|             $\vdots$              |      $\vdots$      |
 |                $A$                |       $n_A$        |
 
 $n_a$ is the number of patients with $a (2 \leq a \leq A)$ tumor samples
 available. We let $\omega_a \geq 0$ be the number of patients who
 contribute $a$ tumor samples to the study. We want to find
 $(\omega_2,...,\omega_A$) meeting appropriate constraints and that
-achieves $$
-\varphi_{max} := \max_{\omega_2,...,\omega_A} \sum_{a=2}^A \frac{\omega_a}{\tau^2 + f(a,\sigma^2,\rho)}
-$$ where $f(a,\sigma^2,\rho)$ is the same as what we have defined in the
-pre-collection scenario. The details of constraints can be found in the
-paper.
+achieves
 
-For illustration, we explore the optimal design for a study with the
-following estimated parameters:
+$$
+\varphi_{max} := \max_{\omega_2,...,\omega_A} \sum_{a=2}^A \frac{\omega_a}{\tau^2 + f(a,\sigma^2,\rho)}
+$$
+
+where $f(a,\sigma^2,\rho)$ is identical to the pre-collection scenario
+setting. The details of constraints can be found in the [paper](link).
+
+For illustration purpose, we explore the optimal design for a study with
+the following estimated parameters:
 
 - $(\hat{\tau}^2,\hat{\sigma}^2,\hat{\rho}) = (2.04,5.24,1.68)$
 
@@ -325,8 +285,8 @@ as the following:
 |                 9                 |         4          |
 |                10                 |         2          |
 
-The function `recursive_search` that computes the optimal design takes
-the following as inputs:
+The function `recursive_search()` (in $\texttt{recursive_search.cpp}$)
+computes the optimal design with following inputs:
 
 - `A`: the largest number of tumor samples collected among all subjects
 - `M`: a total number of tumor samples budgeted
@@ -339,7 +299,7 @@ the following as inputs:
 - `sigma_sq`: $\sigma^2$
 - `rho`: $\rho$
 
-We obtain optimal design solution for $M = 200.$
+Set budget as $M = 200$ and compute optimal design.
 
 ``` r
 params <- c(2.04,5.24,1.68)
@@ -353,11 +313,10 @@ res <- recursive_search(A = A,M = M,R = R, Om = Om, N = N,
                         tau_sq = params[1], sigma_sq = params[2],rho = params[3])
 ```
 
-The output of the function is a list of two things:
+The function outputs a list containing
 
-- The optimal design solution $(\omega_1,\omega_2,...,\omega_A)$ that
-  achieves $\varphi_{max}$
-- $\varphi_{max}$
+- the solution $(\omega_1,\omega_2,...,\omega_A)$
+- the optimal value $\varphi_{max}$
 
 ``` r
 res
