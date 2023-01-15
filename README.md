@@ -1,7 +1,7 @@
 ## Best intratumor heterogeneity association study design
 
-This document partly reproduces numerical studies presented in the best
-ITH (intratumor heterogeneity) association study [paper]().
+This document reproduces parts of numerical studies presented in the
+best intratumor heterogeneity (ITH) association study [paper]().
 Specifically, we will
 
 1.  simulate (binary) multiregion genomic data,
@@ -59,39 +59,39 @@ tumor_mat_list[[1]]
     ##  [5,]  0  0  0  0  0  0  0  0  0   0
     ##  [6,]  1  1  0  1  1  0  1  1  1   0
     ##  [7,]  1  1  1  0  0  1  0  1  1   1
-    ##  [8,]  1  1  1  0  1  0  1  1  1   1
+    ##  [8,]  0  0  0  0  0  0  0  0  0   0
     ##  [9,]  0  0  0  0  0  0  0  0  0   0
     ## [10,]  0  0  0  0  0  0  0  0  0   0
     ## [11,]  0  0  0  0  0  0  0  0  0   0
     ## [12,]  0  0  0  0  0  0  0  0  0   0
     ## [13,]  0  0  0  0  0  0  0  0  0   0
-    ## [14,]  0  0  0  0  0  0  0  0  0   0
+    ## [14,]  1  1  1  0  1  0  1  1  1   1
     ## [15,]  1  1  1  0  0  1  1  0  1   1
-    ## [16,]  0  0  1  1  0  0  1  1  0   1
-    ## [17,]  0  0  1  0  1  1  0  0  0   1
-    ## [18,]  0  1  0  1  0  0  0  1  1   1
-    ## [19,]  0  0  0  0  0  0  0  0  0   0
+    ## [16,]  0  0  0  0  0  0  0  0  0   0
+    ## [17,]  0  0  1  1  0  0  1  1  0   1
+    ## [18,]  0  0  1  0  1  1  0  0  0   1
+    ## [19,]  0  1  0  1  0  0  0  1  1   1
     ## [20,]  1  0  0  0  1  0  1  0  1   1
     ## [21,]  0  1  0  0  0  1  1  1  1   0
     ## [22,]  0  0  0  0  0  0  0  0  0   0
     ## [23,]  1  1  1  0  1  1  1  0  1   0
     ## [24,]  0  0  0  0  0  0  0  0  0   0
     ## [25,]  0  0  0  0  0  0  0  0  0   0
-    ## [26,]  0  0  1  1  0  0  1  1  1   1
+    ## [26,]  0  0  0  0  0  0  0  0  0   0
     ## [27,]  0  0  0  0  0  0  0  0  0   0
-    ## [28,]  0  0  0  0  0  0  0  0  0   0
+    ## [28,]  0  0  1  1  0  0  1  1  1   1
     ## [29,]  1  1  1  0  0  1  1  0  1   0
     ## [30,]  0  0  0  0  0  0  0  0  0   0
-    ## [31,]  0  0  0  0  0  0  0  0  0   0
-    ## [32,]  0  1  1  1  1  0  0  1  1   0
-    ## [33,]  0  0  0  0  0  0  0  0  0   0
+    ## [31,]  0  1  1  1  1  0  0  1  1   0
+    ## [32,]  1  1  0  1  1  1  0  0  1   0
+    ## [33,]  1  1  0  1  0  1  1  0  1   0
     ## [34,]  0  0  0  0  0  0  0  0  0   0
-    ## [35,]  0  0  0  0  0  0  0  0  0   0
-    ## [36,]  0  0  0  0  0  0  0  0  0   0
+    ## [35,]  1  1  1  0  1  0  1  0  0   1
+    ## [36,]  1  0  0  0  0  1  1  0  0   1
     ## [37,]  0  0  0  0  0  0  0  0  0   0
     ## [38,]  0  0  0  0  0  0  0  0  0   0
     ## [39,]  0  0  0  0  0  0  0  0  0   0
-    ## [40,]  0  0  0  0  0  0  0  0  0   0
+    ## [40,]  1  0  0  0  0  0  0  0  1   1
 
 ### Estimate parameters
 
@@ -118,7 +118,7 @@ estimate_parameters(tumor_mat_list)
 ```
 
     ## sigma_square          rho   tau_square 
-    ##    3.4577143    0.1394921    1.0519638
+    ##    4.5485079    0.1198413    1.5765887
 
 ### Find the optimal design
 
@@ -274,8 +274,9 @@ as tabulated in the following:
 |                 9                 |         4          |
 |                10                 |         2          |
 
-The function `recursive_search()` (defined in `recursive_search.cpp`)
-computes the optimal design with following inputs:
+The function `recursive_search()` (defined in
+${\texttt{recursive_search.cpp}}$\`) computes the optimal design with
+following inputs:
 
 - `A`: the largest number of tumor samples collected among all subjects
 - `M`: a total number of tumor samples budgeted
