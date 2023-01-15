@@ -202,7 +202,7 @@ We assume we have already collected 372 tumor samples from 84 patients as tabula
 |                 9                 |         4          |
 |                10                 |         2          |
 
-The function `recursive_search()` (defined in ${\texttt{recursive_search.cpp}}$`) computes the optimal design with following inputs:
+The function `recursive_search()` (defined in recursive_search.cpp) computes the optimal design with following inputs:
 
 -   `A`: the largest number of tumor samples collected among all subjects
 -   `M`: a total number of tumor samples budgeted
