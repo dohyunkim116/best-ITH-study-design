@@ -109,9 +109,9 @@ $$
 
 In the following example, we set $M = 100$ and search $K_{max}$ that maximizes $\varphi$ for the following parameters (which will result in different $K_{max}$):
 
--   $(\hat{\tau}^2,\hat{\sigma}^2,\hat{\rho}) = (4.718, 5.831, 1.463)$ (2nd row)
--   $(\hat{\tau}^2,\hat{\sigma}^2,\hat{\rho}) = (3.123, 6.527, 0.877)$ (8th row)
--   $(\hat{\tau}^2,\hat{\sigma}^2,\hat{\rho}) = (2.009, 6.800, 0.147)$ (10th row)
+-   $(\hat{\tau}^2,\hat{\sigma}^2,\hat{\rho}) = (4.718, 5.831, 1.463)$ 
+-   $(\hat{\tau}^2,\hat{\sigma}^2,\hat{\rho}) = (3.123, 6.527, 0.877)$
+-   $(\hat{\tau}^2,\hat{\sigma}^2,\hat{\rho}) = (2.009, 6.800, 0.147)$
 
 The function `phi1()` takes $\sigma^2$, $\rho$ and $\tau^2$, number of samples $K$, and a total budget $M$ as inputs. The output of the function is $\varphi$.
 
