@@ -1,9 +1,11 @@
+Rcpp::sourceCpp("recursive_search.cpp")
+suppressMessages(library(tictoc))
 suppressMessages(library(doParallel))
 suppressMessages(library(foreach))
-Rcpp::sourceCpp("recursive_search.cpp")
 
-simulate_tumors <- function(nTumors,nSamp=NA,nSamp_vec=NA,nSeg,mutationRates=NA,theta_lb=NA,theta_ub=NA,thetas=NA,
-                               sim=NA){
+simulate_tumors <- function(nTumors,nSamp=NA,nSamp_vec=NA,nSeg,
+                            mutationRates=NA,identical_latent_mut_rates = T,
+                            theta_lb=NA,theta_ub=NA,thetas=NA,sim=NA){
     if(!is.na(sim)) set.seed(sim)
     if(is.na(nSamp)) {
         if(is.na(nSamp_vec[1]))
@@ -12,15 +14,32 @@ simulate_tumors <- function(nTumors,nSamp=NA,nSamp_vec=NA,nSeg,mutationRates=NA,
     else {
         nSamp_vec <- rep(nSamp,nTumors)
     }
-    if(is.na(mutationRates[1])){
-        P <- runif(nSeg)
+    if (identical_latent_mut_rates){
+        if(is.na(mutationRates[1])){
+            P <- runif(nSeg)
+        }
+        else {
+            P <- mutationRates
+        }    
     }
     else {
-        P <- mutationRates
+        if(is.na(mutationRates[1])){
+            P = lapply(1:nTumors,function(i){
+                runif(nSeg, 0, runif(1,0.5,1))
+            })  
+        }
+        else {
+            P = lapply(1:nTumors,function(i){
+                mutationRates * runif(nSeg,0.5,1)
+            })
+        }
     }
     
     Deltas <- lapply(1:nTumors,function(i){
-        rbernoulli(length(P),P) %>% as.numeric()
+        if (identical_latent_mut_rates)
+            rbernoulli(length(P),P) %>% as.numeric()
+        else
+            rbernoulli(length(P[[i]]),P[[i]]) %>% as.numeric()
     })
     
     if(!is.na(theta_lb) && !is.na(theta_ub))
@@ -46,12 +65,19 @@ simulate_tumors <- function(nTumors,nSamp=NA,nSamp_vec=NA,nSeg,mutationRates=NA,
     tumor_mat_list
 }
 
-funWeightV3_mc <- function(tumor_mat_list,num_cores){
-    distMatList <- lapply(tumor_mat_list,function(tumor_mat){
-        dist(t(tumor_mat),method = "manhattan",diag = T,upper = T) %>% as.matrix()
-    })
+funWeightV4 <- function(tumor_mat_list=NULL,distMatList=NULL, num_cores = 1){
+    if(is.null(tumor_mat_list) && is.null(distMatList)){
+        stop("Provide either tumor matrix list or distance matrix list.")
+    }
+    else {
+        if(is.null(distMatList)){
+            distMatList <- lapply(tumor_mat_list,function(tumor_mat){
+                dist(t(tumor_mat),method = "manhattan",diag = T,upper = T) %>% as.matrix()
+            })
+        }
+    }
     
-    tempFun <- function(distMat){
+    tempFun <- function(distMat, num_cores){
         k <- nrow(distMat)
         if(k <= 1)stop("Something is wrong!")
         distVec <- distMat[lower.tri(distMat)]
@@ -59,40 +85,44 @@ funWeightV3_mc <- function(tumor_mat_list,num_cores){
         k3 <- NULL
         if(k >= 3){
             tempCombn <- combn(k, 3)
-            k3 <- mclapply(1:ncol(tempCombn),function(i){
+            k3 <- lapply(1:ncol(tempCombn), function(i){
                 tempIdx <- tempCombn[, i]
-                tempMat <- cbind(c(distMat[tempIdx[1], tempIdx[2]], 
-                                   distMat[tempIdx[1], tempIdx[2]], 
-                                   distMat[tempIdx[1], tempIdx[3]]), 
-                                 c(distMat[tempIdx[1], tempIdx[3]], 
-                                   distMat[tempIdx[2], tempIdx[3]], 
-                                   distMat[tempIdx[2], tempIdx[3]]))
+                tempMat <- cbind(c(distMat[tempIdx[1], tempIdx[2]], distMat[tempIdx[1], tempIdx[2]], distMat[tempIdx[1], tempIdx[3]]), c(distMat[tempIdx[1], tempIdx[3]], distMat[tempIdx[2], tempIdx[3]], distMat[tempIdx[2], tempIdx[3]]))
                 tempMat
-            },mc.cores = num_cores) %>% do.call(rbind,.)
+            }) %>% do.call(rbind,.)
         }
+        
         k4 <- NULL
+        
         if(k >= 4){
             tempCombn <- combn(k, 4)
-            k4 <- mclapply(1:ncol(tempCombn),function(i){
+            k4 <- lapply(1:ncol(tempCombn),function(i){
                 tempIdx <- tempCombn[, i]
                 tempMat <- cbind(c(distMat[tempIdx[1], tempIdx[2]], distMat[tempIdx[1], tempIdx[3]], distMat[tempIdx[1], tempIdx[4]]), c(distMat[tempIdx[3], tempIdx[4]], distMat[tempIdx[2], tempIdx[4]], distMat[tempIdx[2], tempIdx[3]]))
                 tempMat
-            },mc.cores = num_cores) %>% do.call(rbind,.)
+            }) %>% do.call(rbind,.)
         }
+        
         return(list(k2 = k2, k3 = k3, k4 = k4))
     }
-    tempList <- lapply(distMatList, tempFun)
-    #	str(tempList)
+    
+    tempList <- mclapply(distMatList, tempFun, mc.cores = num_cores)
+    
     
     k2 <- k3 <- k4 <- NULL
-    for(i in 1:length(tempList)){
-        k2 <- rbind(k2, tempList[[i]]$k2)
-        k3 <- rbind(k3, tempList[[i]]$k3)
-        k4 <- rbind(k4, tempList[[i]]$k4)
-    }
-    #	str(k2)
-    #	str(k3)
-    #	str(k4)
+    
+    k2 <- lapply(1:length(tempList), function(i){
+        tempList[[i]]$k2
+    }) %>% do.call(rbind,.)
+    
+    k3 <- lapply(1:length(tempList), function(i){
+        tempList[[i]]$k3
+    }) %>% do.call(rbind,.)
+    
+    k4 <- lapply(1:length(tempList), function(i){
+        tempList[[i]]$k4
+    }) %>% do.call(rbind,.)
+    
     
     tempFun2 <- function(distMatList,i,j){
         tempDistMat1 <- distMatList[[i]]
@@ -101,18 +131,19 @@ funWeightV3_mc <- function(tumor_mat_list,num_cores){
         tempDistVec2 <- tempDistMat2[lower.tri(tempDistMat2)]
         tempMat <- cbind(rep(tempDistVec1, each = length(tempDistVec2)), 
                          rep(tempDistVec2, length(tempDistVec1)))
-        tempMat        
+        c(mean((tempMat[, 1] - tempMat[, 2])^2),nrow(tempMat))
     }
+    
     registerDoParallel(cores = num_cores)
     kk <- foreach(i=1:(length(distMatList) - 1),.combine = rbind) %:%
         foreach(j=(i+1):length(distMatList),.combine = rbind) %dopar% {
             tempFun2(distMatList,i,j)
         }
-    #	str(kk)
+    
     
     a1 <- mean((k4[, 1] - k4[, 2])^2)
     a2 <- mean((k3[, 1] - k3[, 2])^2)
-    a3 <- mean((kk[, 1] - kk[, 2])^2)
+    a3 <- sum(kk[, 1] * kk[, 2])/sum(kk[, 2])
     b1 <- a1 / 2
     b2 <- (a1 - a2) / 2
     
@@ -120,21 +151,24 @@ funWeightV3_mc <- function(tumor_mat_list,num_cores){
     sigmaVec <- 2 / m / (m - 1) * b1 + 4 * (m - 2) / m / (m - 1) * b2
     sigmaVec[sigmaVec < 0] <- 0 #remove negative values
     xVec <- unlist(lapply(distMatList, function(x)mean(x[lower.tri(x)])))
+    
     funLogL <- function(tau2, xVec, sigmaVec){
         wVec <- 1 / (sigmaVec^2 + tau2)
         mu <- sum(wVec * xVec) / sum(wVec)
         return(-0.5 * sum(dnorm(xVec, mu, sqrt(sigmaVec^2 + tau2), log = TRUE)))
     }
-    tempOptim <- optim(0, funLogL, xVec = xVec, sigmaVec = sigmaVec, method = "L-BFGS-B", lower = 1e-7, upper = Inf)
-    b3 <- tempOptim$par
     
+    tempOptim <- optim(0, funLogL, xVec = xVec, sigmaVec = sigmaVec, method = "L-BFGS-B", lower = 1e-7, upper = Inf)
+    
+    b3 <- tempOptim$par
+    #b3 <- 2
     w <- 1 / (b3 + sigmaVec)
     attr(w, "par") <- c("sigma_square"=b1, "rho"=b2, "tau_square"=b3)
     return(w)
 }
 
-estimate_parameters <- function(tumor_mat_list){
-    weight <- funWeightV3_mc(tumor_mat_list,1)
+estimate_parameters <- function(tumor_mat_list, num_cores = 1){
+    weight <- funWeightV4(tumor_mat_list, num_cores = num_cores)
     attr(weight,"par")
 }
 
@@ -163,28 +197,3 @@ power1 <- function(sigma_sq,rho,tau_sq,beta,sigma_y,nSamp,allowed_total_nSamp){
     attr(res,"xi") <- xi
     res
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
